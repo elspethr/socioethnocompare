@@ -1,14 +1,14 @@
 #Code for paper "Comparing networks generated through...."
-#Elspeth Ready, 2019/09/20
+#Elspeth Ready, last modified 2020/06/05
 
 
 ### set-up ###
 
+#don't forget to setwd
+
 library(statnet)
 library(intergraph)
 library(scales)
-setwd("Dropbox/PR_Elspeth Ready/Formal-Informal Networks/Analysis")
-
 
 ### data prep and organization ###
 
@@ -19,13 +19,17 @@ ethnog <- network(ethnodata[,1:2], matrix.type="edgelist", directed=FALSE)
 
 #load network supplement data
 nsdata <-read.csv("P2NS_edges.csv", header=TRUE, stringsAsFactors=FALSE)
-#get all network members (need to add two isolate KRs)
-P2allnamed <- sort(c(unique(c(nsdata$Sender_ID, nsdata$Receiver_ID)), "P1015", "P1063"))
+nsdata <- nsdata[-which(nsdata$Sender_ID=="P1139"),] #P1139 was curiosity sample, ignore his ties
+#get all network members (need to add four isolate KRs)
+P2allnamed <- sort(c(unique(c(nsdata$Sender_ID, nsdata$Receiver_ID)), "P1015", "P1063", "P1106", "P1727"))
+#make network
 nsg <- network.initialize(n=length(P2allnamed), directed=FALSE, multiple=FALSE)
 nsg%v%"vertex.names" <- P2allnamed
 senderindex <- match(nsdata$Sender_ID, P2allnamed)
 receiverindex <- match(nsdata$Receiver_ID, P2allnamed)
 add.edges(nsg, tail=senderindex, head=receiverindex)
+add.edges(nsg, tail=which(P2allnamed=="P2008"), head=which(P2allnamed=="P2024")) #edge not properly coded in data
+
 #a hack to solve multiple edges problem
 temp <- asIgraph(nsg)
 library(igraph)
@@ -38,8 +42,8 @@ surveydat <- read.csv("PR_p1p2_combined.csv", header=TRUE, stringsAsFactors=FALS
 SI <- paste0(surveydat$P2SIPrjName, surveydat$P2FIPrjName)
 gettingRs <- cbind.data.frame(ID=surveydat$ProjectIDs, SI, KEY=surveydat$P2KEY, stringsAsFactors=FALSE)
 allRs <- gettingRs[which(gettingRs$ID != "" & gettingRs$SI != "" & gettingRs$KEY != "" ),]
-allRs <- allRs[which(!(allRs$ID %in% c("P1106", "P2041", "P1727"))),]
-#do not include 1106 (no interview) and 1727 (NS refusal) who did not complete the P2 interviews, also 2041 who was a curiosity sample
+allRs <- allRs[which(!(allRs$ID %in% c("P2041", "P1139"))),]
+#these two are in a curiosity sample not the main sample
 #also excludes four individuals who completed some interviews but never were assigned a ProjectID
 
 #organize location data for ethnographic network
@@ -50,6 +54,7 @@ sortedethnodat <- sortedethnodat[match(ethnog%v%"vertex.names", sortedethnodat$I
 sortedethnodat$Location <- factor(sortedethnodat$Location)
 #flag individuals in ethno but not NS
 sortedethnodat$Location[which(sortedethnodat$ID %in% c("9990", "9991", "9992", "9993"))] <- NA 
+
 #sanity checks
 sortedethnodat$ID == ethnog%v%"vertex.names" #all TRUE
 duplicated(sortedethnodat$ID) #all FALSE
@@ -86,7 +91,7 @@ rownames(attributes) <- 1:length(attributes$ProjectIDs)
 
 #gender
 attributes$P2SIGEN <- replace(attributes$P2SIGEN, which(attributes$P2SIGEN==9), NA)
-### one line of code removed here for privacy reasons ###
+### one line of code removed for privacy reasons ###
 gendata <- data.frame(FI=as.numeric(attributes$P2FIGEN), SI=as.numeric(attributes$P2SIGEN), OTHER=as.numeric(attributes$GEN))
 GEN <- factor(apply(gendata, 1, max, na.rm=TRUE), levels=c(1,2)) #warnings OK.
 for (i in 1:length(GEN)) {
@@ -139,13 +144,13 @@ subnsg%v%"FREQ"<- as.numeric(as.character(attributes$FREQ[match(subnsg%v%"vertex
 ### data and methods section ###
 
 #sample numbers in data and methods section
-sum(table(nsdata$Sender_ID)==9) #13
-length(allRs$ID) #116
-sum(table(nsdata$Sender_ID)==9)/length(allRs$ID) #13/116
+sum(table(nsdata$Sender_ID)==9)
+length(allRs$ID) 
+sum(table(nsdata$Sender_ID)==9)/length(allRs$ID) 
 
 #calculate mean income
 incs <- data.frame(ID=surveydat$ProjectIDs, FIinc=surveydat$P2FIDM9, FIben=surveydat$P2FIDM9P, SIinc=surveydat$P2SIDM9, SIben=surveydat$P2SIDM9P)
-incs <- incs[!(incs$ID==""),] #this figure includes all survey respondents except those with no ID
+incs <- incs[which(incs$ID %in% allRs$ID),] #this figure includes all survey respondents except those with no ID
 FInc <- na.omit(incs$FIinc + incs$FIben)
 SInc <- na.omit(incs$SIinc + incs$SIben)
 mean(c(FInc, SInc))
@@ -224,12 +229,7 @@ for (i in 1:length(ethnew)){
   }
 }
 overlapfull <- ethnewdouble[which(overlapedges==1)]
-length(overlapfull) #74 overlapping edges!
-
-overlapfullmat <- matrix(unlist(strsplit(overlapfull, "-")), ncol=2, byrow=TRUE)
-overlapnet1 <- graph.edgelist(overlapfullmat)
-missvert <- V(overlapnet1)$name[!V(isubeth)$name %in% V(overlapnet1)$name]
-overlapnet1 <- add.vertices(overlapnet1, 5, attr=list(name=missvert))
+length(overlapfull) #73 overlapping edges!s
 detach(package:igraph)
 
 ol <- length(overlapfull)
@@ -322,19 +322,22 @@ tab2$tri <- c(summary(ethnog~triangle), summary(nsg~triangle), summary(subethno~
 tab2
 
 #mean deg of different samples
-mean(ethnodeg[which(ethnog%v%"vertex.names" %in% KRs)]) #4.1
-mean(ethnodeg[-which(ethnog%v%"vertex.names" %in% KRs)]) #1.6
+mean(ethnodeg[which(ethnog%v%"vertex.names" %in% KRs)])
+mean(ethnodeg[-which(ethnog%v%"vertex.names" %in% KRs)]) 
 
 SRnoKR <- allRs$ID[-which(allRs$ID %in% KRs)]
 
-mean(nsdeg[which(nsg%v%"vertex.names" %in% KRs)]) #6.3
-mean(nsdeg[which(nsg%v%"vertex.names" %in% SRnoKR)]) #5.6
-mean(nsdeg[-which(nsg%v%"vertex.names" %in% allRs$ID)]) #1.2
+mean(nsdeg[which(nsg%v%"vertex.names" %in% KRs)]) 
+mean(nsdeg[which(nsg%v%"vertex.names" %in% KRs & nsdeg>0)]) 
+mean(nsdeg[which(nsg%v%"vertex.names" %in% SRnoKR)]) 
+mean(nsdeg[-which(nsg%v%"vertex.names" %in% allRs$ID)]) #non-respondents
 
 t.test(nsdeg[which(nsg%v%"vertex.names" %in% KRs)], nsdeg[which(nsg%v%"vertex.names" %in% SRnoKR)], alternative="greater")
+#excluding isolates since non-KRs cannot be isolates...
+t.test(nsdeg[which(nsg%v%"vertex.names" %in% KRs & nsdeg>0)], nsdeg[which(nsg%v%"vertex.names" %in% SRnoKR)], alternative="greater")
 
 #mostly due to indiv with highest degree...
-mean(nsdeg[which(nsg%v%"vertex.names" %in% KRs & nsdeg!=max(nsdeg))])
+mean(nsdeg[which(nsg%v%"vertex.names" %in% KRs & nsdeg!=max(nsdeg) & nsdeg>0)])
 
 #how many high deg indivs are KRs?
 sum(degdf$ID[1:50] %in% KRs)
@@ -357,6 +360,7 @@ newes <- data.frame(e1, e2)
 newes <- newes[-which(paste(edgess[,1], edgess[,2]) %in% c("19 24", "24 67", "67 76")),]
 netnewes <- as.network(newes)
 add.vertices(netnewes, 1)
+
 tempnames <- (netnewes%v%"vertex.names")
 tempnames[78] <- ((subnsg%v%"vertex.names")[which(!((subnsg%v%"vertex.names") %in% (netnewes%v%"vertex.names")))])
 netnewes%v%"vertex.names" <- tempnames
@@ -411,18 +415,18 @@ survinethno <- allRs$ID[allRs$ID %in% (ethnog%v%"vertex.names")]
 survnotinethno <- allRs$ID[-which(allRs$ID %in% (ethnog%v%"vertex.names"))]
 
 #who has no triangles?
-sum(insgtris[-which(nsg%v%"vertex.names" %in% allRs$ID)]==0) #74
-sum(insgtris[which(nsg%v%"vertex.names" %in% allRs$ID)]==0) #34
+sum(insgtris[-which(nsg%v%"vertex.names" %in% allRs$ID)]==0) #76 non-respondents
+sum(insgtris[which(nsg%v%"vertex.names" %in% allRs$ID)]==0) #35 of 117 respondents
 
 #compare transitivity surrounding survey respondents in and out of ethnog
 mean(insgtris[which(nsg%v%"vertex.names" %in% survinethno)]) 
 mean(insgtris[which(nsg%v%"vertex.names" %in% survnotinethno)]) 
 
+noiso <- KRs[-which(KRs %in% c("P1106", "P1727", "P1015", "P1063"))]
 #key respondents vs non key-respondents
 mean(insgtris[which(nsg%v%"vertex.names" %in% KRs)])
+mean(insgtris[which(nsg%v%"vertex.names" %in% noiso)])
 mean(insgtris[which(nsg%v%"vertex.names" %in% SRnoKR)]) 
-t.test(insgtris[which(nsg%v%"vertex.names" %in% KRs)], insgtris[which(nsg%v%"vertex.names" %in% SRnoKR)], alternative="greater")
+t.test(insgtris[which(nsg%v%"vertex.names" %in% noiso)], insgtris[which(nsg%v%"vertex.names" %in% SRnoKR)], alternative="greater")
 #without the central indiv
-mean(insgtris[which(nsg%v%"vertex.names" %in% KRs & insgtris!=max(insgtris))])
-
-     
+mean(insgtris[which(nsg%v%"vertex.names" %in% noiso & insgtris!=max(insgtris))])
