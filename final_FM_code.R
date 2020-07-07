@@ -9,6 +9,7 @@
 library(statnet)
 library(intergraph)
 library(scales)
+library(RVAideMemoire)
 
 ### data prep and organization ###
 
@@ -335,6 +336,7 @@ mean(nsdeg[-which(nsg%v%"vertex.names" %in% allRs$ID)]) #non-respondents
 t.test(nsdeg[which(nsg%v%"vertex.names" %in% KRs)], nsdeg[which(nsg%v%"vertex.names" %in% SRnoKR)], alternative="greater")
 #excluding isolates since non-KRs cannot be isolates...
 t.test(nsdeg[which(nsg%v%"vertex.names" %in% KRs & nsdeg>0)], nsdeg[which(nsg%v%"vertex.names" %in% SRnoKR)], alternative="greater")
+perm.t.test(nsdeg[which(nsg%v%"vertex.names" %in% KRs & nsdeg>0)], nsdeg[which(nsg%v%"vertex.names" %in% SRnoKR)], nperm=10000,alternative="greater")
 
 #mostly due to indiv with highest degree...
 mean(nsdeg[which(nsg%v%"vertex.names" %in% KRs & nsdeg!=max(nsdeg) & nsdeg>0)])
@@ -428,5 +430,8 @@ mean(insgtris[which(nsg%v%"vertex.names" %in% KRs)])
 mean(insgtris[which(nsg%v%"vertex.names" %in% noiso)])
 mean(insgtris[which(nsg%v%"vertex.names" %in% SRnoKR)]) 
 t.test(insgtris[which(nsg%v%"vertex.names" %in% noiso)], insgtris[which(nsg%v%"vertex.names" %in% SRnoKR)], alternative="greater")
+
+perm.t.test(insgtris[which(nsg%v%"vertex.names" %in% noiso)], insgtris[which(nsg%v%"vertex.names" %in% SRnoKR)], nperm=1000, alternative="greater")
+
 #without the central indiv
 mean(insgtris[which(nsg%v%"vertex.names" %in% noiso & insgtris!=max(insgtris))])
