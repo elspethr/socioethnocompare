@@ -336,7 +336,7 @@ mean(nsdeg[-which(nsg%v%"vertex.names" %in% allRs$ID)]) #non-respondents
 t.test(nsdeg[which(nsg%v%"vertex.names" %in% KRs)], nsdeg[which(nsg%v%"vertex.names" %in% SRnoKR)], alternative="greater")
 #excluding isolates since non-KRs cannot be isolates...
 t.test(nsdeg[which(nsg%v%"vertex.names" %in% KRs & nsdeg>0)], nsdeg[which(nsg%v%"vertex.names" %in% SRnoKR)], alternative="greater")
-perm.t.test(nsdeg[which(nsg%v%"vertex.names" %in% KRs & nsdeg>0)], nsdeg[which(nsg%v%"vertex.names" %in% SRnoKR)], nperm=10000,alternative="greater")
+perm.t.test(nsdeg[which(nsg%v%"vertex.names" %in% KRs & nsdeg>0)], nsdeg[which(nsg%v%"vertex.names" %in% SRnoKR)], nperm=1000,alternative="greater")
 
 #mostly due to indiv with highest degree...
 mean(nsdeg[which(nsg%v%"vertex.names" %in% KRs & nsdeg!=max(nsdeg) & nsdeg>0)])
