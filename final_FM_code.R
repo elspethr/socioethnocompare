@@ -384,11 +384,11 @@ length(na.omit(allbets$ebet[1:50]))
 
 #men vs women
 sum(ethnog%v%"GEN" == 2)
-sum(nsg%v%"GEN" == 2)
+sum(nsg%v%"GEN" == 2 | is.na(nsg%v%"GEN"))
 sum(subethno%v%"GEN"== 2)
 mean(ethnodeg[which(ethnog%v%"GEN"==2)])
 mean(ethnodeg[which(ethnog%v%"GEN"==1)])
-mean(nsdeg[which(nsg%v%"GEN"==2)])
+mean(nsdeg[which(nsg%v%"GEN"==2 | is.na(nsg%v%"GEN"))])
 mean(nsdeg[which(nsg%v%"GEN"==1)])
 
 ### results section 3 (transitivity) ###
